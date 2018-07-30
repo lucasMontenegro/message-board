@@ -32,8 +32,8 @@
             crossorigin="anonymous"></script>
     <script>
       $(function() {
-        var currentBoard = window.location.pathname.slice(3,-1);
-        var url = "/api/threads/"+currentBoard;
+        var currentBoard = window.location.pathname.slice(3);
+        var url = "/api/threads/"+currentBoard.replace("/", "");
         $('#boardTitle').text('Welcome to '+window.location.pathname)
         $.ajax({
           type: "GET",
