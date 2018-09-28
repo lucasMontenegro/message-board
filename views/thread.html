@@ -1,79 +1,124 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Welcome to HyperDev!</title>
-    <meta name="description" content="A cool thing made with HyperDev">
-    <link id="favicon" rel="icon" href="https://hyperdev.com/favicon-app.ico" type="image/x-icon">
+    <title>Anonymous Message Board</title>
+    <meta name="description" content="Anonymous Message Board by Lucas Montenegro (https://www.linkedin.com/in/lucas-montenegro-1b191915a/)">
+    <link id="favicon" rel="icon" href="https://glitch.com/edit/favicon.ico?v=3" type="image/x-icon">
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="/public/style.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=Comfortaa" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Hind+Madurai" rel="stylesheet">
   </head>
   <body>
-    <header>
-      <h1 id='threadTitle'></h1>
-    </header>
-    <br>
-    
-    <div id='boardDisplay'></div>
-    
-    <hr style='margin: 50px; margin-top: 200px'>
-    <!-- Your web-app is https, so your scripts need to be too -->
+    <nav>
+      <ul>
+        <li class="to-left"><a href="/">home</a></li>
+        <li class="to-left"><a id="board-link"></a></li>
+        <li><a href="https://www.linkedin.com/in/lucas-montenegro-1b191915a/" target="_blank"><i class="fab fa-linkedin-in"></i><div style="position: fixed; left: -10000px;">Linkedin profile</div></a></li>
+        <li><a href="https://github.com/lucasMontenegro/" target="_blank"><i class="fab fa-github"></i><div style="position: fixed; left: -10000px;">GitHub profile</div></a></li>
+        <li><a href="https://codepen.io/lucas_montenegro/full/GXqRWw/" target="_blank"><i class="fas fa-globe-americas"></i><div style="position: fixed; left: -10000px;">Personal portfolio page</div></a></li>
+        <li><a href="https://github.com/lucasMontenegro/message-board" target="_blank">source code</a></li>
+      </ul>
+    </nav>
+
+    <div id="main-wrapper">
+      <header>
+        <h3 id="threadTitle"></h3>
+      </header>
+      <br>
+
+      <div id="boardDisplay"></div>
+    </div>
+
     <script src="https://code.jquery.com/jquery-2.2.1.min.js"
             integrity="sha256-gvQgAFzTH6trSrAWoH1iPo9Xc96QxSZ3feW6kem+O00="
             crossorigin="anonymous"></script>
     <script>
+      function renderThread (thread, boardName) {
+
+        let repliesHTML = '';
+        for (let reply of thread.replies) {
+          repliesHTML += `
+            <div class="reply">
+              <form id="reportReply" class="report">
+                <input type="hidden" name="thread_id" value="${ thread._id }">
+                <input type="hidden" name="reply_id" value="${ reply._id }">
+                <input type="submit" value="Report" class="button">
+              </form>
+              <p class="id">id: ${ reply._id } (${ reply.created_on })</p>
+              <form id="deleteReply">
+                <input type="hidden" value="${ thread._id }" name="thread_id" required>
+                <input type="hidden" value="${ reply._id }" name="reply_id" required>
+                <input type="text" placeholder="password" name="delete_password" required>
+                <input class="button" type="submit" value="Delete">
+              </form>
+              <pre>${ reply.text }</pre>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="thread">
+            <form id="reportThread" class="report">
+              <input type="hidden" name="report_id" value="${ thread._id }">
+              <input type="submit" value="Report" class="button">
+            </form>
+            <div class="main">
+              <p class="id">id: ${ thread._id } (${ thread.created_on })</p>
+              <form id="deleteThread">
+                <input type="hidden" value="${ thread._id }" name="thread_id" required>
+                <input type="text" placeholder="password" name="delete_password" required>
+                <input class="button" type="submit" value="Delete">
+              </form>
+              <pre>${ thread.text }</pre>
+            </div>
+            <hr>
+            <div class="replies">
+              ${ repliesHTML }
+              <div class="newReply">
+                <form action="/api/replies/${ boardName }/" method="post" id="newReply" class="post-form">
+                  <input type="hidden" name="thread_id" value="${ thread._id }">
+                  <textarea rows="5" type="text" placeholder="Quick reply..." name="text" required></textarea>
+                  <br>
+                  <div class="footer">
+                    <input class="input-text" type="text" placeholder="password to delete" name="delete_password" required>
+                    <input class="button" type="submit" value="Submit">
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        `;
+      }
       $(function() {
-        var currentURL = window.location.pathname.slice(3);
-        currentURL = currentURL.split('/');
-        
-        var url = "/api/replies/"+currentURL[0];
+        currentURL = window.location.pathname.slice(3).split('/');
+
+        const boardName = currentURL[0];
+        const thread_id = currentURL[1];
+
+        var url = "/api/replies/"+boardName;
         $('#threadTitle').text(window.location.pathname);
         $.ajax({
           type: "GET",
           url: url,
-          data:{thread_id: currentURL[1]},
-          success: function(ele)
+          data: { thread_id },
+          success: function(thread)
           {
-            var boardThreads= [];
-            //
-            // THIS ARRAY SET UP IS FOR CODE READABILITIES AND TESTING!
-            // THIS IS NOT WHAT IT WOULD LOOK LIKE TO GO LIVE
-            //
-              console.log(ele);//can I use typeScript please?!
-              var thread = ['<div class="thread">'];
-              thread.push('<div class="main">')
-              thread.push('<p class="id">id: '+ele._id+' ('+ele.created_on+')</p>');
-              thread.push('<form id="reportThread"><input type="hidden" name="report_id" value="'+ele._id+'"><input type="submit" value="Report"></form>');
-              thread.push('<form id="deleteThread"><input type="hidden" value="'+ele._id+'" name="thread_id" required=""><input type="text" placeholder="password" name="delete_password" required=""><input type="submit" value="Delete"></form>');
-              thread.push('<h3>'+ele.text+'</h3>');
-              thread.push('</div><div class="replies">');
-              ele.replies.forEach(function(rep) {
-                thread.push('<div class="reply">')
-                thread.push('<p class="id">id: '+rep._id+' ('+rep.created_on+')</p>');
-                thread.push('<form id="reportReply"><input type="hidden" name="thread_id" value="'+ele._id+'"><input type="hidden" name="reply_id" value="'+rep._id+'"><input type="submit" value="Report"></form>');
-                thread.push('<form id="deleteReply"><input type="hidden" value="'+ele._id+'" name="thread_id" required=""><input type="hidden" value="'+rep._id+'" name="reply_id" required=""><input type="text" placeholder="password" name="delete_password" required=""><input type="submit" value="Delete"></form>');
-                thread.push('<p>'+rep.text+'</p>');
-                thread.push('</div>')
-              });
-              thread.push('<div class="newReply">')
-              thread.push('<form action="/api/replies/'+currentURL[0]+'/" method="post" id="newReply">');
-              thread.push('<input type="hidden" name="thread_id" value="'+ele._id+'">');
-              thread.push('<textarea rows="5" cols="80" type="text" placeholder="Quick reply..." name="text" required=""></textarea><br>');
-              thread.push('<input type="text" placeholder="password to delete" name="delete_password" required=""><input style="margin-left: 5px" type="submit" value="Submit">')
-              thread.push('</form></div></div></div>')
-              boardThreads.push(thread.join(''));
-            $('#boardDisplay').html(boardThreads.join(''));
+            $('#boardDisplay').html(renderThread(thread, boardName));
+            $('#board-link').attr('href', '/b/' + boardName).text(boardName);
           }
         });
-        
+
         $('#newThread').submit(function(){
-          $(this).attr('action', "/api/threads/" + currentBoard);
+          $(this).attr('action', "/api/threads/" + thread_id);
         });
-        
-        
+
+
         $('#boardDisplay').on('submit','#reportThread', function(e) {
-          var url = "/api/threads/"+currentURL[0];
+          var url = "/api/threads/"+boardName;
           $.ajax({
             type: "PUT",
             url: url,
@@ -83,7 +128,7 @@
           e.preventDefault();
         });
         $('#boardDisplay').on('submit','#reportReply', function(e) {
-          var url = "/api/replies/"+currentURL[0];
+          var url = "/api/replies/"+boardName;
           $.ajax({
             type: "PUT",
             url: url,
@@ -93,7 +138,7 @@
           e.preventDefault();
         });
         $('#boardDisplay').on('submit','#deleteThread', function(e) {
-          var url = "/api/threads/"+currentURL[0];
+          var url = "/api/threads/"+boardName;
           $.ajax({
             type: "DELETE",
             url: url,
@@ -101,9 +146,9 @@
             success: function(data) { alert(data) }
           });
           e.preventDefault();
-        });        
+        });
         $('#boardDisplay').on('submit','#deleteReply', function(e) {
-          var url = "/api/replies/"+currentURL[0];
+          var url = "/api/replies/"+boardName;
           $.ajax({
             type: "DELETE",
             url: url,
@@ -111,7 +156,7 @@
             success: function(data) { alert(data) }
           });
           e.preventDefault();
-        });              
+        });
       });
    </script>
   </body>

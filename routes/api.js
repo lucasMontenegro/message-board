@@ -9,6 +9,12 @@ module.exports = async function (app, done) {
   const client = await MongoClient.connect(process.env.DB_URL, opts);
   const collection = client.db().collection(process.env.COLL_NAME);
 
+  const boardsArray = process.env.BOARDS.split(',');
+  boards = {};
+  for (let name of boardsArray) {
+    boards[name] = true;
+  }
+
   app.route('/api/threads/:board')
     .get(getThreads(collection))
     .post(postThread(collection))
@@ -24,11 +30,22 @@ module.exports = async function (app, done) {
   done();
 };
 
+let boards;
+const boardIsInvalid = str => {
+  if (/[^\w]/.test(str)) return true;
+  return !boards[str];
+}
+
 
 // I can GET an array of the most recent 10 bumped threads on the board with
 // only the most recent 3 replies from /api/threads/{board}. The reported and
 // delete_passwords fields will not be sent.
 const getThreads = collection => async (req, res) => {
+  if (boardIsInvalid(req.params.board)) {
+    res.status(404).send('board not found');
+    return
+  }
+  
   const pipeline = [
     { $match: {
       board: req.params.board,
@@ -46,6 +63,7 @@ const getThreads = collection => async (req, res) => {
       created_on: 1,
       bumped_on: 1,
       replies: { $slice: [ "$replies", -3 ] },
+      replycount: { $size: "$replies" },
     } },
     { $project: {
       _id: 1,
@@ -55,6 +73,7 @@ const getThreads = collection => async (req, res) => {
       "replies._id": 1,
       "replies.text": 1,
       "replies.created_on": 1,
+      replycount: 1,
     } },
   ];
   let docs;
@@ -75,6 +94,11 @@ const getThreads = collection => async (req, res) => {
 // bumped_on(date&time, starts same as created_on), reported(boolean),
 // delete_password, & replies(array).
 const postThread = collection => async (req, res) => {
+  if (boardIsInvalid(req.params.board)) {
+    res.status(404).send('board not found');
+    return
+  }
+  
   const text = req.body.text;
   if (typeof text !== 'string' || text === '') {
     res.status(400).send('missing message text');
@@ -115,6 +139,11 @@ const postThread = collection => async (req, res) => {
 // request to /api/threads/{board} and pass along the thread_id.
 // (Text response will be 'success')
 const reportThread = collection => async (req, res) => {
+  if (boardIsInvalid(req.params.board)) {
+    res.status(404).send('board not found');
+    return
+  }
+  
   const thread_id = req.body.thread_id;
   if (typeof thread_id !== 'string'
     || !ObjectID.isValid(thread_id)) {
@@ -148,6 +177,11 @@ const reportThread = collection => async (req, res) => {
 // /api/threads/{board} and pass along the thread_id & delete_password.
 // (Text response will be 'incorrect password' or 'success')
 const deleteThread = collection => async (req, res) => {
+  if (boardIsInvalid(req.params.board)) {
+    res.status(404).send('board not found');
+    return
+  }
+  
   let input;
   if (typeof req.query.thread_id === 'undefined') {
     input = req.body;
@@ -194,6 +228,11 @@ const deleteThread = collection => async (req, res) => {
 // I can GET an entire thread with all it's replies from
 // /api/replies/{board}?thread_id={thread_id}. Also hiding the same fields.
 const getReplies = collection => async (req, res) => {
+  if (boardIsInvalid(req.params.board)) {
+    res.status(404).send('board not found');
+    return
+  }
+  
   const thread_id = req.query.thread_id;
   if (typeof thread_id !== 'string'
     || !ObjectID.isValid(thread_id)) {
@@ -244,6 +283,11 @@ const getReplies = collection => async (req, res) => {
 // /b/{board}/{thread_id}) In the thread's 'replies' array will be saved _id,
 // text, created_on, delete_password, & reported.
 const postReply = collection => async (req, res) => {
+  if (boardIsInvalid(req.params.board)) {
+    res.status(404).send('board not found');
+    return
+  }
+  
   const thread_id = req.body.thread_id;
   if (typeof thread_id !== 'string'
     || !ObjectID.isValid(thread_id)) {
@@ -291,6 +335,11 @@ const postReply = collection => async (req, res) => {
 // request to /api/replies/{board} and pass along the thread_id & reply_id.
 // (Text response will be 'success')
 const reportReply = collection => async (req, res) => {
+  if (boardIsInvalid(req.params.board)) {
+    res.status(404).send('board not found');
+    return
+  }
+  
   const thread_id = req.body.thread_id;
   if (typeof thread_id !== 'string'
     || !ObjectID.isValid(thread_id)) {
@@ -332,6 +381,11 @@ const reportReply = collection => async (req, res) => {
 // request to /api/replies/{board} and pass along the thread_id, reply_id, &
 // delete_password. (Text response will be 'incorrect password' or 'success')
 const deleteReply = collection => async (req, res) => {
+  if (boardIsInvalid(req.params.board)) {
+    res.status(404).send('board not found');
+    return
+  }
+  
   const thread_id = req.body.thread_id;
   if (typeof thread_id !== 'string'
     || !ObjectID.isValid(thread_id)) {

@@ -43,7 +43,7 @@ app.use('/public', express.static(process.cwd() + '/public'));
 
 app.use(cors({origin: '*'})); //For FCC testing purposes only
 
-//Sample front-end
+//Front-end
 app.route('/b/:board/')
   .get(function (req, res) {
     res.sendFile(process.cwd() + '/views/board.html');

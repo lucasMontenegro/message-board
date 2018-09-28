@@ -25,14 +25,14 @@ suite('Functional Tests', function() {
     test('User can post a thread.', function (done) {
       chai
         .request(server)
-        .post("/api/threads/g")
+        .post("/api/threads/general")
         .send({ text: "thread 1", delete_password: "secret" })
         .end((err, res) => {
           if (err) throw err;
           assert.equal(res.status, 200, 'http status should be 200');
           expect(res).to.redirect;
           let text = 'response should redirect to thread page';
-          const re = /^[^\/]*\/\/[^\/\?]*\/b\/g\/(\d|[a-f]){24}/;
+          const re = /^[^\/]*\/\/[^\/\?]*\/b\/general\/(\d|[a-f]){24}/;
           assert.match(res.redirects[0], re, text);
           done();
         });
@@ -41,14 +41,14 @@ suite('Functional Tests', function() {
     test('User can post a thread without delete password.', function (done) {
       chai
         .request(server)
-        .post("/api/threads/g")
+        .post("/api/threads/general")
         .send({ text: "thread 2" })
         .end((err, res) => {
           if (err) throw err;
           assert.equal(res.status, 200, 'http status should be 200');
           expect(res).to.redirect;
           let text = 'response should redirect to thread page';
-          const re = /^[^\/]*\/\/[^\/\?]*\/b\/g\/(\d|[a-f]){24}/;
+          const re = /^[^\/]*\/\/[^\/\?]*\/b\/general\/(\d|[a-f]){24}/;
           assert.match(res.redirects[0], re, text);
           done();
         });
@@ -66,7 +66,7 @@ suite('Functional Tests', function() {
       for (let i = 0; i < 10; i++) {
         reqs.push(chai
           .request(server)
-          .post("/api/threads/g")
+          .post("/api/threads/general")
           .send({ text: "(get) thread " + i, delete_password: 'secret' + i }));
       }
       Promise.all(reqs)
@@ -81,7 +81,7 @@ suite('Functional Tests', function() {
     test('User can get the most recently bumped threads.', function (done) {
       chai
         .request(server)
-        .get("/api/threads/g")
+        .get("/api/threads/general")
         .end((err, res) => {
           if (err) throw err;
           assert.equal(res.status, 200, 'http status should be 200');
@@ -97,7 +97,7 @@ suite('Functional Tests', function() {
 
             const created_on = Date.parse(threads[i].created_on);
             assert.isNotNaN(created_on, 'created_on should be a valid date');
-            bumped_on = Date.parse(threads[i].bumped_on);
+            const bumped_on = Date.parse(threads[i].bumped_on);
             assert.isNotNaN(bumped_on, 'bumped_on should be a valid date');
             const text = 'threads should be ordered by bumped_on';
             assert.isAtLeast(bumped_on, n, text);
@@ -128,11 +128,11 @@ suite('Functional Tests', function() {
     suiteSetup(done => {
       chai
         .request(server)
-        .post("/api/threads/g")
+        .post("/api/threads/general")
         .send({ text: "(delete) thread", delete_password })
         .end((err, res) => {
           if (err) throw err;
-          const re = /^[^\/]*\/\/[^\/\?]*\/b\/g\/((?:\d|[a-f]){24})/;
+          const re = /^[^\/]*\/\/[^\/\?]*\/b\/general\/((?:\d|[a-f]){24})/;
           thread_id = res.redirects[0].match(re)[1];
           done();
         });
@@ -141,7 +141,7 @@ suite('Functional Tests', function() {
     test('User sends incorrect password.', function (done) {
       chai
         .request(server)
-        .delete("/api/threads/g")
+        .delete("/api/threads/general")
         .send({ thread_id, delete_password: "hmm" })
         .end((err, res) => {
           if (err) throw err;
@@ -153,7 +153,7 @@ suite('Functional Tests', function() {
     test('User can delete a thread.', function (done) {
       chai
         .request(server)
-        .delete("/api/threads/g")
+        .delete("/api/threads/general")
         .send({ thread_id, delete_password })
         .end((err, res) => {
           if (err) throw err;
@@ -174,11 +174,11 @@ suite('Functional Tests', function() {
     suiteSetup(done => {
       chai
         .request(server)
-        .post("/api/threads/g")
+        .post("/api/threads/general")
         .send({ text: "(put/report) thread", delete_password: 'secret' })
         .end((err, res) => {
           if (err) throw err;
-          const re = /^[^\/]*\/\/[^\/\?]*\/b\/g\/((?:\d|[a-f]){24})/;
+          const re = /^[^\/]*\/\/[^\/\?]*\/b\/general\/((?:\d|[a-f]){24})/;
           thread_id = res.redirects[0].match(re)[1];
           done();
         });
@@ -187,7 +187,7 @@ suite('Functional Tests', function() {
     test('User can report a thread.', function (done) {
       chai
         .request(server)
-        .put("/api/threads/g")
+        .put("/api/threads/general")
         .send({ thread_id })
         .end((err, res) => {
           if (err) throw err;
@@ -215,11 +215,11 @@ suite('Functional Tests', function() {
     suiteSetup(done => {
       chai
         .request(server)
-        .post("/api/threads/g")
+        .post("/api/threads/general")
         .send({ text: "(post reply) thread", delete_password: 'secret' })
         .end((err, res) => {
           if (err) throw err;
-          const re = /^[^\/]*\/\/[^\/\?]*\/b\/g\/((?:\d|[a-f]){24})/;
+          const re = /^[^\/]*\/\/[^\/\?]*\/b\/general\/((?:\d|[a-f]){24})/;
           thread_id = res.redirects[0].match(re)[1];
           done();
         });
@@ -228,7 +228,7 @@ suite('Functional Tests', function() {
     test('User can post a reply to a thread.', function (done) {
       chai
         .request(server)
-        .post("/api/replies/g")
+        .post("/api/replies/general")
         .send({
           thread_id,
           text: "reply 1",
@@ -239,7 +239,7 @@ suite('Functional Tests', function() {
           assert.equal(res.status, 200, 'http status should be 200');
           expect(res).to.redirect;
           let text = 'response should redirect to thread page';
-          const reStr = '^[^\\/]*\\/\\/[^\\/\\?]*\\/b\\/g\\/' + thread_id;
+          const reStr = '^[^\\/]*\\/\\/[^\\/\\?]*\\/b\\/general\\/' + thread_id;
           assert.match(res.redirects[0], new RegExp(reStr), text);
           done();
         });
@@ -255,11 +255,11 @@ suite('Functional Tests', function() {
     suiteSetup(done => {
       chai
         .request(server)
-        .post("/api/threads/g")
+        .post("/api/threads/general")
         .send({ text: "(get replies) thread", delete_password })
         .end((err, res) => {
           if (err) throw err;
-          const re = /^[^\/]*\/\/[^\/\?]*\/b\/g\/((?:\d|[a-f]){24})/;
+          const re = /^[^\/]*\/\/[^\/\?]*\/b\/general\/((?:\d|[a-f]){24})/;
           thread_id = res.redirects[0].match(re)[1];
           done();
         });
@@ -268,7 +268,7 @@ suite('Functional Tests', function() {
     test('User can request a thread.', function (done) {
       chai
         .request(server)
-        .get("/api/replies/g")
+        .get("/api/replies/general")
         .query({ thread_id })
         .end((err, res) => {
           if (err) throw err;
@@ -298,13 +298,13 @@ suite('Functional Tests', function() {
     test('User can\'t request a deleted thread.', function (done) {
       chai
         .request(server)
-        .delete("/api/threads/g")
+        .delete("/api/threads/general")
         .send({ thread_id, delete_password })
         .end((err, res) => {
           if (err) throw err;
           chai
             .request(server)
-            .get("/api/replies/g")
+            .get("/api/replies/general")
             .query({ thread_id })
             .end((err, res) => {
               if (err) throw err;
@@ -326,21 +326,21 @@ suite('Functional Tests', function() {
     suiteSetup(done => {
       chai
         .request(server)
-        .post("/api/threads/g")
+        .post("/api/threads/general")
         .send({ text: "(report reply) thread", delete_password: 'secret' })
         .end((err, res) => {
           if (err) throw err;
-          const re = /^[^\/]*\/\/[^\/\?]*\/b\/g\/((?:\d|[a-f]){24})/;
+          const re = /^[^\/]*\/\/[^\/\?]*\/b\/general\/((?:\d|[a-f]){24})/;
           thread_id = res.redirects[0].match(re)[1];
           chai
             .request(server)
-            .post("/api/replies/g")
+            .post("/api/replies/general")
             .send({ thread_id, text: "(reported) reply", delete_password: 'secret' })
             .end((err, res) => {
               if (err) throw err;
               chai
                 .request(server)
-                .get("/api/replies/g")
+                .get("/api/replies/general")
                 .query({ thread_id })
                 .end((err, res) => {
                   reply_id = res.body.replies[0]._id;
@@ -353,7 +353,7 @@ suite('Functional Tests', function() {
     test('User can report a reply', function (done) {
       chai
         .request(server)
-        .put("/api/replies/g")
+        .put("/api/replies/general")
         .send({ thread_id, reply_id })
         .end((err, res) => {
           assert.equal(res.status, 200, 'http status should be 200');
@@ -375,21 +375,21 @@ suite('Functional Tests', function() {
     suiteSetup(done => {
       chai
         .request(server)
-        .post("/api/threads/g")
+        .post("/api/threads/general")
         .send({ text: "(delete reply) thread", delete_password: 'secret' })
         .end((err, res) => {
           if (err) throw err;
-          const re = /^[^\/]*\/\/[^\/\?]*\/b\/g\/((?:\d|[a-f]){24})/;
+          const re = /^[^\/]*\/\/[^\/\?]*\/b\/general\/((?:\d|[a-f]){24})/;
           thread_id = res.redirects[0].match(re)[1];
           chai
             .request(server)
-            .post("/api/replies/g")
+            .post("/api/replies/general")
             .send({ thread_id, text: "(deleted) reply", delete_password })
             .end((err, res) => {
               if (err) throw err;
               chai
                 .request(server)
-                .get("/api/replies/g")
+                .get("/api/replies/general")
                 .query({ thread_id })
                 .end((err, res) => {
                   reply_id = res.body.replies[0]._id;
@@ -402,7 +402,7 @@ suite('Functional Tests', function() {
     test('User can delete a reply', function (done) {
       chai
         .request(server)
-        .delete("/api/replies/g")
+        .delete("/api/replies/general")
         .send({ thread_id, reply_id, delete_password })
         .end((err, res) => {
           assert.equal(res.status, 200, 'http status should be 200');
@@ -414,7 +414,7 @@ suite('Functional Tests', function() {
     test('User can\'t access a deleted reply', function (done) {
       chai
         .request(server)
-        .get("/api/replies/g")
+        .get("/api/replies/general")
         .query({ thread_id })
         .end((err, res) => {
           for (let reply of res.body.replies) {
@@ -427,7 +427,7 @@ suite('Functional Tests', function() {
     test('User can\'t report a deleted reply', function (done) {
       chai
         .request(server)
-        .put("/api/replies/g")
+        .put("/api/replies/general")
         .send({ thread_id, reply_id })
         .end((err, res) => {
           assert.equal(res.status, 404, 'http status should be 404');
